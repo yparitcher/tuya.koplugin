@@ -1,0 +1,53 @@
+[
+{
+    "name" : "Lamp",
+    "id": "xxxxxxxxxxxxxxxxxxxx",
+    "key": "xxxxxxxxxxxxxxxx",
+    "ip": "192.168.0.2",
+    "ver": 3.3,
+    "bulb_type": "B",
+    "max_temp": 5500,
+    "shortcuts": [
+    {
+        "bright": 100
+    },
+    {
+        "bright": 100,
+        "temp": 2700
+    }
+    ]
+},
+{
+    "name": "Main Room Lamp",
+    "id": "xxxxxxxxxxxxxxxxxxxx",
+    "key": "xxxxxxxxxxxxxxxx",
+    "ip": "192.168.0.3",
+    "ver": 3.3,
+    "bulb_type": "B",
+    "max_temp": 6500,
+    "shortcuts": [
+    {
+        "bright": 100
+    },
+    {
+        "bright": 50
+    },
+    {
+        "bright": 30
+    },
+    {
+        "bright": 100,
+        "temp": 4000
+    },
+    {
+        "temp": 4500
+    },
+    {
+        "temp": 4000
+    },
+    {
+        "temp": 3500
+    }
+    ]
+}
+]

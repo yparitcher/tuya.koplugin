@@ -4,42 +4,43 @@ import sys
 import json
 import tinytuya
 
+def getBulb(dev):
+    bulb = tinytuya.BulbDevice(dev["id"], dev["ip"], dev["key"])
+    bulb.set_socketRetryLimit(1)
+    bulb.set_socketTimeout(3)
+    bulb.set_socketPersistent(True)
+    bulb.set_bulb_type(dev["bulb_type"])
+    bulb.set_version(dev["ver"])
+    return bulb
+
+def executeSc(bulb, sc):
+    if "temp" in sc:
+        temp = (sc["temp"] - 2700) // ((dev["max_temp"] - 2700)/100)
+        if "bright" in sc:
+            bulb.set_white_percentage(sc["bright"], temp)
+        else:
+            bulb.set_colourtemp_percentage(temp)
+    elif "bright" in sc:
+        bulb.set_brightness_percentage(sc["bright"])
+
+def parseState(bulb):
+    data = bulb.state()
+    if "Error" in data:
+        return {}
+    else:
+        bright = (data["brightness"] - 10) / 9.9
+        temp = ((data["colourtemp"]/10) *((dev["max_temp"] - 2700)/100)) + 2700
+        return json.dumps({"power": data["is_on"], "bright": bright, "temp": temp})
+
 with open(sys.path[0] + "/tuya_devices.json") as jsonFile:
      jsonData = json.load(jsonFile)
 jsonFile.close()
 
-def parseState(data):
-  if "Error" in data:
-      return {}
-  else:
-      bright = (data["brightness"] - 10) / 9.9
-      temp = ((data["colourtemp"]/10) *((dev["max_temp"] - 2700)/100)) + 2700
-      return {"power": data["is_on"], "bright": bright, "temp": temp}
+dev = jsonData[int(sys.argv[1])]
+bulb = getBulb(dev)
 
-dn = int(sys.argv[1])
-dev = jsonData[dn]
-did = jsonData[dn]["id"]
-ip = jsonData[dn]["ip"]
-key = jsonData[dn]["key"]
+sc = dev["shortcuts"][int(sys.argv[2])]
+executeSc(bulb, sc)
 
-bulb = tinytuya.BulbDevice(did, ip, key)
-bulb.set_socketRetryLimit(1)
-bulb.set_socketTimeout(3)
-bulb.set_socketPersistent(True)
-bulb.set_bulb_type(jsonData[dn]["bulb_type"])
-bulb.set_version(jsonData[dn]["ver"])
-
-sn = int(sys.argv[2])
-sc = dev["shortcuts"][sn]
-if "temp" in jsonData[dn]["shortcuts"][sn]:
-	temp = (jsonData[dn]["shortcuts"][sn]["temp"] - 2700) // ((jsonData[dn]["max_temp"] - 2700)/100)
-	if "bright" in jsonData[dn]["shortcuts"][sn]:
-		bulb.set_white_percentage(jsonData[dn]["shortcuts"][sn]["bright"], temp)
-	else:
-		bulb.set_colourtemp_percentage(temp)
-elif "bright" in jsonData[dn]["shortcuts"][sn]:
-	bulb.set_brightness_percentage(jsonData[dn]["shortcuts"][sn]["bright"])
-
-data = bulb.state()
-print(json.dumps(parseState(data)))
+print(parseState(bulb))
 

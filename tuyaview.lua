@@ -20,6 +20,7 @@ local KeyValuePage = require("ui/widget/keyvaluepage")
 local LeftContainer = require("ui/widget/container/leftcontainer")
 local LineWidget = require("ui/widget/linewidget")
 local Math = require("optmath")
+local NetworkMgr = require("ui/network/manager")
 local Notification = require("ui/widget/notification")
 local OverlapGroup = require("ui/widget/overlapgroup")
 local Size = require("ui/size")
@@ -115,46 +116,27 @@ function ShortcutBox:init()
 
     local inner_w = self.width - 2*self.border
     local inner_h = self.height - 2*self.border
-    local hg = HorizontalGroup:new{dimen = Geom:new{w = inner_w, h = inner_h},}
 
-    if self.sc.bright then
-        local bt = TextWidget:new{
-            text = "B",
-            face = Font:getFace(self.font_face, self.font_size),
-            fgcolor = self.is_offline and Blitbuffer.COLOR_GRAY or Blitbuffer.COLOR_BLACK,
-        }
         local bv = TextWidget:new{
-            text = tostring(self.sc.bright),
+            text =  self.sc.bright and tostring(self.sc.bright) .. "%" or "",
             face = Font:getFace(self.font_face, self.font_size),
             fgcolor = self.is_offline and Blitbuffer.COLOR_GRAY or Blitbuffer.COLOR_BLACK,
         }
+            local tv = TextWidget:new{
+                text = self.sc.temp and tostring(self.sc.temp) .. "K" or "",
+                face = Font:getFace(self.font_face, self.font_size),
+                fgcolor = self.is_offline and Blitbuffer.COLOR_GRAY or Blitbuffer.COLOR_BLACK,
+            }
 
-        table.insert(hg, VerticalGroup:new{
-            dimen = Geom:new{w = bv:getWidth(), h = inner_h},
-            bt,
-            bv,
-        })
-    end
-    table.insert(hg, HorizontalSpan:new{ width = Size.span.horizontal_default, })
-    if self.sc.temp then
-        table.insert(hg, VerticalGroup:new{
+        local vg = VerticalGroup:new{
             dimen = Geom:new{w = inner_w, h = inner_h},
-            TextWidget:new{
-                text = "T",
-                face = Font:getFace(self.font_face, self.font_size),
-                fgcolor = self.is_offline and Blitbuffer.COLOR_GRAY or Blitbuffer.COLOR_BLACK,
-            },
-            TextWidget:new{
-                text = tostring(self.sc.temp),
-                face = Font:getFace(self.font_face, self.font_size),
-                fgcolor = self.is_offline and Blitbuffer.COLOR_GRAY or Blitbuffer.COLOR_BLACK,
-            },
-        })
-    end
+            bv,
+            tv,
+        }
 
     local bright_temp_w = CenterContainer:new{
         dimen = Geom:new{w = inner_w, h = inner_h},
-        hg,
+        vg,
     }
     self[1] = FrameContainer:new{
         padding = 0,
@@ -166,15 +148,38 @@ function ShortcutBox:init()
     }
 end
 
-function ShortcutBox:onTap()
+local function tuyaCommand(args)
     local wait_msg = InfoMessage:new{
         text = _("Executing…"),
     }
     UIManager:show(wait_msg)
-    local command =  pycommand .. " " .. self.device.idx .. " " .. self.idx .. " 2>&1 ; echo" -- ensure we get stderr and output something
-    local completed, result_str = Trapper:dismissablePopen(command, wait_msg)
-require("logger").warn("@@@", command, result_str)
+    local command =  pycommand .. args .. " 2>&1" -- ensure we get stderr and output something
+    local completed, result = Trapper:dismissablePopen(command, wait_msg)
+require("logger").warn("@@@", command, completed, result)
     UIManager:close(wait_msg)
+    if completed then
+        return result
+    end
+end
+
+local function updateState(dev, state)
+    if type(state) == "table" then
+        dev.bright = state.bright
+        dev.temp = state.temp
+    end
+    local text = T("Bright: %1% Temp: %2K", dev.bright or "", dev.temp or "")
+    local msg = InfoMessage:new{text = text}
+    UIManager:show(msg)
+end
+
+function ShortcutBox:onTap()
+    Trapper:wrap(function()
+        local result= tuyaCommand(self.device.idx .. " " .. self.idx)
+        if result then
+            parsed, err = JSON.decode(result)
+            updateState(self.device, parsed or err)
+        end
+    end)
     return true
 end
 
@@ -192,6 +197,7 @@ local TuyaDevice = InputContainer:new{
     sc_border = 0,
     font_size = 0,
     font_face = "xx_smallinfofont",
+    state = nil,
     is_offline = false,
 }
 
@@ -255,18 +261,6 @@ function TuyaDevice:init()
     }
 end
 
--- Set of { Font color, background color }
-local SPAN_COLORS = {
-    { Blitbuffer.COLOR_BLACK, Blitbuffer.COLOR_WHITE },
-    { Blitbuffer.COLOR_BLACK, Blitbuffer.COLOR_GRAY_E },
-    { Blitbuffer.COLOR_BLACK, Blitbuffer.COLOR_LIGHT_GRAY },
-    { Blitbuffer.COLOR_BLACK, Blitbuffer.COLOR_GRAY },
-    { Blitbuffer.COLOR_WHITE, Blitbuffer.COLOR_WEB_GRAY },
-    { Blitbuffer.COLOR_WHITE, Blitbuffer.COLOR_DARK_GRAY },
-    { Blitbuffer.COLOR_WHITE, Blitbuffer.COLOR_DIM_GRAY },
-    { Blitbuffer.COLOR_WHITE, Blitbuffer.COLOR_BLACK },
-}
-
 function TuyaDevice:update()
 end
 
@@ -277,6 +271,7 @@ local TuyaView = InputContainer:new{
     title = "",
     width = nil,
     height = nil,
+    turn_off_wifi = nil,
     covers_fullscreen = true, -- hint for UIManager:_repaint()
 }
 
@@ -289,8 +284,13 @@ function TuyaView:init()
     else
     	return self:onClose()
 	end
-	pycommand = wDir .."/tu.py"
-    
+	pycommand = wDir .."/tu.py "
+
+    if not NetworkMgr:isWifiOn() then
+        self.turn_off_wifi = true
+        NetworkMgr:turnOnWifi()
+    end
+
     self.dimen = Geom:new{
         w = Screen:getWidth(),
         h = Screen:getHeight(),
@@ -435,6 +435,9 @@ end
 
 function TuyaView:onClose()
     UIManager:close(self)
+    if self.turn_off_wifi then
+        NetworkMgr:turnOffWifi()
+    end
     return true
 end
 

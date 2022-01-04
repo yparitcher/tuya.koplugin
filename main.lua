@@ -39,6 +39,7 @@ end
 function Tuya:addToMainMenu(menu_items)
     menu_items.tuya = {
         text = _("Tuya"),
+        sorting_hint = "more_tools",
         callback = function() UIManager:show(self:getTuyaView()) end,
     }
 end

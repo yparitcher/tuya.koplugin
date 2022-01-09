@@ -1,10 +1,6 @@
 local BD = require("ui/bidi")
 local Blitbuffer = require("ffi/blitbuffer")
-local BottomContainer = require("ui/widget/container/bottomcontainer")
-local Button = require("ui/widget/button")
 local CenterContainer = require("ui/widget/container/centercontainer")
-local CloseButton = require("ui/widget/closebutton")
-local DataStorage = require("datastorage")
 local Device = require("device")
 local Font = require("ui/font")
 local FFIUtil = require("ffi/util")
@@ -16,23 +12,18 @@ local HorizontalSpan = require("ui/widget/horizontalspan")
 local InfoMessage = require("ui/widget/infomessage")
 local InputContainer = require("ui/widget/container/inputcontainer")
 local JSON = require("rapidjson")
-local KeyValuePage = require("ui/widget/keyvaluepage")
 local LeftContainer = require("ui/widget/container/leftcontainer")
-local LineWidget = require("ui/widget/linewidget")
-local Math = require("optmath")
 local NetworkMgr = require("ui/network/manager")
-local Notification = require("ui/widget/notification")
 local OverlapGroup = require("ui/widget/overlapgroup")
 local Size = require("ui/size")
 local TextBoxWidget = require("ui/widget/textboxwidget")
 local TextWidget = require("ui/widget/textwidget")
+local TitleBar = require("ui/widget/titlebar")
 local Trapper = require("ui/trapper")
 local UIManager = require("ui/uimanager")
 local UnderlineContainer = require("ui/widget/container/underlinecontainer")
 local VerticalGroup = require("ui/widget/verticalgroup")
 local VerticalSpan = require("ui/widget/verticalspan")
-local Widget = require("ui/widget/widget")
-local Input = Device.input
 local Screen = Device.screen
 local _ = require("gettext")
 local T = FFIUtil.template
@@ -44,42 +35,6 @@ local function getSourceDir()
     if callerSource:find("^@") then
         return callerSource:gsub("^@(.*)/[^/]*", "%1")
     end
-end
-
-local TuyaTitle = VerticalGroup:new{
-    tuya_view = nil,
-}
-
-function TuyaTitle:init()
-    self.close_button = CloseButton:new{ window = self }
-    local btn_width = self.close_button:getSize().w
-    self.text_w = CenterContainer:new{
-        dimen = { w = self.width },
-        ignore_if_over = height,
-        TextWidget:new{
-            text = "Tuya Devices",
-            max_width = self.width - btn_width,
-            face = Font:getFace("tfont"),
-        },
-    }
-    table.insert(self, OverlapGroup:new{
-        dimen = { w = self.width - btn_width},
-        self.text_w,
-        self.close_button,
-    })
-    table.insert(self, OverlapGroup:new{
-        dimen = { w = self.width, h = Size.line.thick },
-        LineWidget:new{
-            dimen = Geom:new{ w = self.width, h = Size.line.thick },
-            background = Blitbuffer.COLOR_BLACK,
-            style = "solid",
-        },
-    })
-end
-
-function TuyaTitle:onClose()
-    self.tuya_view:onClose()
-    return true
 end
 
 local ShortcutBox = InputContainer:new{
@@ -176,7 +131,7 @@ function ShortcutBox:onTap()
     Trapper:wrap(function()
         local result= tuyaCommand(self.device.idx .. " " .. self.idx)
         if result then
-            parsed, err = JSON.decode(result)
+            local parsed, err = JSON.decode(result)
             updateState(self.device, parsed or err)
         end
     end)
@@ -227,10 +182,10 @@ function TuyaDevice:init()
         dimen = Geom:new{w = self.width, h = self.height - self.title.height}
     }
 
-    --local manual = 
+    --local manual =
     --table.insert(self.shortcut_container, manual)
     --table.insert(self.shortcut_container, HorizontalSpan:new{ width = self.sc_padding, })
-    
+
     for num, v in ipairs(self.device.shortcuts) do
         local SB = ShortcutBox:new{
             width = self.sc_width,
@@ -278,13 +233,13 @@ local TuyaView = InputContainer:new{
 function TuyaView:init()
     local wDir = getSourceDir()
     local deviceJson = wDir .. "/tuya_devices.json"
-    parsed, err = JSON.load(deviceJson)
+    local parsed, err = JSON.load(deviceJson) -- luacheck: no unused
     if parsed then
         self.devices = parsed
     else
-    	return self:onClose()
-	end
-	pycommand = wDir .."/tu.py "
+        return self:onClose()
+    end
+    pycommand = wDir .."/tu.py "
 
     if not NetworkMgr:isWifiOn() then
         self.turn_off_wifi = true
@@ -318,23 +273,23 @@ function TuyaView:init()
     -- Put back the possible 7px lost in rounding into outer_padding
     self.outer_padding = math.floor((self.dimen.w - 7*self.sc_width - 6*self.inner_padding) / 2)
 
-    self.inner_dimen = Geom:new{
-        w = self.dimen.w - 2*self.outer_padding,
-        h = self.dimen.h - 2*self.outer_padding,
-    }
-    self.content_width = self.inner_dimen.w
+    self.content_width = self.dimen.w - 2*self.outer_padding
 
-    self.title_bar = TuyaTitle:new{
-        width = self.content_width,
-        height = Size.item.height_default,
-        tuya_view = self,
+    self.title_bar = TitleBar:new{
+        fullscreen = self.covers_fullscreen,
+        width = self.dimen.w,
+        align = "center",
+        title = "Tuya Devices",
+        title_h_padding = self.outer_padding, -- have month name aligned with calendar left edge
+        close_callback = function() self:onClose() end,
+        show_parent = self,
     }
 
     -- week scs names header
     self.sc_names = HorizontalGroup:new{}
 
     -- At most 6 devices in a month
-    local available_height = self.inner_dimen.h - self.title_bar:getSize().h
+    local available_height = self.dimen.h - self.title_bar:getHeight()
                             - self.sc_names:getSize().h
     self.week_height = math.floor((available_height - 7*self.inner_padding) / 6)
     self.sc_border = Size.border.default
@@ -366,14 +321,17 @@ function TuyaView:init()
 
     local content = OverlapGroup:new{
         dimen = Geom:new{
-            w = self.inner_dimen.w,
-            h = self.inner_dimen.h,
+            w = self.dimen.w,
+            h = self.dimen.h,
         },
         allow_mirroring = false,
         VerticalGroup:new{
             self.title_bar,
             self.sc_names,
-            self.main_content,
+            HorizontalGroup:new{
+                HorizontalSpan:new{ width = self.outer_padding },
+                self.main_content,
+            },
         },
     }
     -- assemble page
@@ -391,11 +349,11 @@ end
 
 function TuyaView:_populateItems()
     self.main_content:clear()
-
     for k, v in ipairs(self.devices) do
-        v.idx = k-1, -- Python indexes from 0
+        -- Python indexes from 0
+        v.idx = k-1, -- luacheck: ignore 531
         table.insert(self.main_content, VerticalSpan:new{ width = Size.span.vertical_default })
-        device = TuyaDevice:new{
+        local device = TuyaDevice:new{
             device = v,
             height = self.week_height,
             width = self.content_width,

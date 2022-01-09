@@ -1,27 +1,7 @@
-local BD = require("ui/bidi")
-local BookStatusWidget = require("ui/widget/bookstatuswidget")
-local ConfirmBox = require("ui/widget/confirmbox")
-local DataStorage = require("datastorage")
-local Device = require("device")
 local Dispatcher = require("dispatcher")
-local DocSettings = require("docsettings")
-local FFIUtil = require("ffi/util")
-local InfoMessage = require("ui/widget/infomessage")
-local KeyValuePage = require("ui/widget/keyvaluepage")
-local Math = require("optmath")
-local ReaderFooter = require("apps/reader/modules/readerfooter")
-local ReaderProgress = require("readerprogress")
-local ReadHistory = require("readhistory")
-local Screensaver = require("ui/screensaver")
-local SQ3 = require("lua-ljsqlite3/init")
 local UIManager = require("ui/uimanager")
 local Widget = require("ui/widget/widget")
-local lfs = require("libs/libkoreader-lfs")
-local logger = require("logger")
-local util = require("util")
 local _ = require("gettext")
-local N_ = _.ngettext
-local T = FFIUtil.template
 
 local Tuya = Widget:extend{
     name = "tuya",

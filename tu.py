@@ -13,9 +13,9 @@ def getBulb(dev):
     bulb.set_version(dev["ver"])
     return bulb
 
-def executeSc(bulb, sc):
+def executeSc(bulb, max_temp, sc):
     if "temp" in sc:
-        temp = (sc["temp"] - 2700) // ((dev["max_temp"] - 2700)/100)
+        temp = (sc["temp"] - 2700) // ((max_temp - 2700)/100)
         if "bright" in sc:
             bulb.set_white_percentage(sc["bright"], temp)
         else:
@@ -23,13 +23,13 @@ def executeSc(bulb, sc):
     elif "bright" in sc:
         bulb.set_brightness_percentage(sc["bright"])
 
-def parseState(bulb):
+def parseState(bulb, max_temp):
     data = bulb.state()
     if "Error" in data:
         return {}
     else:
         bright = (data["brightness"] - 10) / 9.9
-        temp = ((data["colourtemp"]/10) *((dev["max_temp"] - 2700)/100)) + 2700
+        temp = ((data["colourtemp"]/10) *((max_temp - 2700)/100)) + 2700
         return json.dumps({"power": data["is_on"], "bright": bright, "temp": temp})
 
 with open(sys.path[0] + "/tuya_devices.json") as jsonFile:
@@ -40,7 +40,7 @@ dev = jsonData[int(sys.argv[1])]
 bulb = getBulb(dev)
 
 sc = dev["shortcuts"][int(sys.argv[2])]
-executeSc(bulb, sc)
+executeSc(bulb, dev["max_temp"], sc)
 
-print(parseState(bulb))
+print(parseState(bulb, dev["max_temp"]))
 

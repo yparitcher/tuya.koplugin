@@ -35,7 +35,10 @@ if len(sys.argv) > 1:
     getStat(jsonData[int(sys.argv[1])])
 else:
     for dev in jsonData:
-        getStat(dev)
+        if "group" in dev:
+            result.append({})
+        else:
+            getStat(dev)
 
 print(json.dumps(result))
 

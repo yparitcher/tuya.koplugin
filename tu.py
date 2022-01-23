@@ -33,14 +33,33 @@ def parseState(bulb, max_temp):
         return json.dumps({"power": data["is_on"], "bright": bright, "temp": temp})
 
 with open(sys.path[0] + "/tuya_devices.json") as jsonFile:
-     jsonData = json.load(jsonFile)
+    jsonData = json.load(jsonFile)
 jsonFile.close()
 
 dev = jsonData[int(sys.argv[1])]
-bulb = getBulb(dev)
-
 sc = dev["shortcuts"][int(sys.argv[2])]
-executeSc(bulb, dev["max_temp"], sc)
+devs = []
+bulbs = []
+states = []
 
-print(parseState(bulb, dev["max_temp"]))
+if "group" in dev:
+    for did, idx in dev["idx"].items():
+        if jsonData[idx]["id"] == did:
+            devs.append(jsonData[idx])
+else:
+    devs.append(dev)
+
+for device in devs:
+    bulbs.append(getBulb(device))
+
+for bulb in bulbs:
+    executeSc(bulb, dev["max_temp"], sc)
+
+for bulb in bulbs:
+    states.append(parseState(bulb, dev["max_temp"]))
+
+if all(x==states[0] for x in states):
+    print(states[0])
+else:
+    print({})
 

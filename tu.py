@@ -21,8 +21,8 @@ def executeSc(bulb, max_temp, sc):
         else:
             bulb.set_colourtemp_percentage(temp)
     elif "bright" in sc:
-    	if sc["bright"] == 1:
-    		bulb.set_brightness(10)
+        if sc["bright"] == 1:
+            bulb.set_brightness(10)
         else:
             bulb.set_brightness_percentage(sc["bright"])
 

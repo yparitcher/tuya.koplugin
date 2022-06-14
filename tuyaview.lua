@@ -110,7 +110,7 @@ local function tuyaCommand(args)
     UIManager:show(wait_msg)
     local command =  pycommand .. args .. " 2>&1" -- ensure we get stderr and output something
     local completed, result = Trapper:dismissablePopen(command, wait_msg)
-require("logger").warn("@@@", command, completed, result)
+--require("logger").warn("@@@", command, completed, result)
     UIManager:close(wait_msg)
     if completed then
         return result

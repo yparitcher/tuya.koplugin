@@ -21,7 +21,10 @@ def executeSc(bulb, max_temp, sc):
         else:
             bulb.set_colourtemp_percentage(temp)
     elif "bright" in sc:
-        bulb.set_brightness_percentage(sc["bright"])
+    	if sc["bright"] == 1:
+    		bulb.set_brightness(10)
+        else:
+            bulb.set_brightness_percentage(sc["bright"])
 
 def parseState(bulb, max_temp):
     data = bulb.state()

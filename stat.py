@@ -29,16 +29,16 @@ def getStat(dev):
   bulb.set_bulb_type(dev["bulb_type"])
   bulb.set_version(dev["ver"])
   data = bulb.state()
-  result.append(parseState(dev, data))
+  return parseState(dev, data)
 
 if len(sys.argv) > 1:
-    getStat(jsonData[int(sys.argv[1])])
+    result = getStat(jsonData[int(sys.argv[1])])
 else:
     for dev in jsonData:
         if "group" in dev:
             result.append({})
         else:
-            getStat(dev)
+            result.append(getStat(dev))
 
 print(json.dumps(result))
 

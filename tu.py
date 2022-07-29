@@ -40,7 +40,6 @@ with open(sys.path[0] + "/tuya_devices.json") as jsonFile:
 jsonFile.close()
 
 dev = jsonData[int(sys.argv[1])]
-sc = dev["shortcuts"][int(sys.argv[2])]
 devs = []
 bulbs = []
 states = []
@@ -55,8 +54,10 @@ else:
 for device in devs:
     bulbs.append(getBulb(device))
 
-for bulb in bulbs:
-    executeSc(bulb, dev["max_temp"], sc)
+if len(sys.argv) > 2:
+    sc = dev["shortcuts"][int(sys.argv[2])]
+    for bulb in bulbs:
+        executeSc(bulb, dev["max_temp"], sc)
 
 for bulb in bulbs:
     states.append(parseState(bulb, dev["max_temp"]))

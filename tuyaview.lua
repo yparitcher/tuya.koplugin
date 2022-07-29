@@ -94,12 +94,12 @@ function ShortcutBox:init()
     }
 end
 
-local function tuyaCommand(device, text, command, args)
+local function tuyaCommand(device, text, args)
     local wait_msg = InfoMessage:new{
         text = text,
     }
     UIManager:show(wait_msg)
-    local command_string =  wDir .. command .. args .. " 2>&1" -- ensure we get stderr and output something
+    local command_string =  wDir .. "/tu.py " .. args .. " 2>&1" -- ensure we get stderr and output something
     local completed, result = Trapper:dismissablePopen(command_string, wait_msg)
     UIManager:close(wait_msg)
     if completed and result then
@@ -113,7 +113,7 @@ end
 
 function ShortcutBox:onTap()
     Trapper:wrap(function()
-        tuyaCommand(self.parent, _("Executing…"), "/tu.py ", self.device.idx .. " " .. self.idx)
+        tuyaCommand(self.parent, _("Executing…"), self.device.idx .. " " .. self.idx)
     end)
     return true
 end
@@ -150,7 +150,7 @@ end
 
 function TuyaDeviceTitle:onTap()
     Trapper:wrap(function()
-        tuyaCommand(self.parent, _("Getting status…"), "/stat.py ", self.parent.device.idx)
+        tuyaCommand(self.parent, _("Getting status…"), self.parent.device.idx)
     end)
     return true
 end

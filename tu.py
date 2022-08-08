@@ -54,8 +54,12 @@ else:
 for device in devs:
     bulbs.append(getBulb(device))
 
-if len(sys.argv) > 2:
+if len(sys.argv) == 3:
     sc = dev["shortcuts"][int(sys.argv[2])]
+    for bulb in bulbs:
+        executeSc(bulb, dev["max_temp"], sc)
+elif len(sys.argv) == 4 and sys.argv[2] == "M" :
+    sc = { "bright": int(sys.argv[3]) }
     for bulb in bulbs:
         executeSc(bulb, dev["max_temp"], sc)
 

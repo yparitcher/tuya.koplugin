@@ -14,6 +14,7 @@ local InputContainer = require("ui/widget/container/inputcontainer")
 local JSON = require("rapidjson")
 local NetworkMgr = require("ui/network/manager")
 local Size = require("ui/size")
+local SpinWidget = require("ui/widget/spinwidget")
 local TextBoxWidget = require("ui/widget/textboxwidget")
 local TextWidget = require("ui/widget/textwidget")
 local TitleBar = require("ui/widget/titlebar")
@@ -112,6 +113,24 @@ local function tuyaCommand(device, text, args)
 end
 
 function ShortcutBox:onTap()
+    if self.manual then
+        local sw = SpinWidget:new{
+            title_text = _("Custom brightness"),
+            value = self.parent.state.bright or 50,
+            value_min = 1,
+            value_max = 100,
+            value_step = 2,
+            value_hold_step = 10,
+            ok_always_enabled = true,
+            callback = function(spin)
+                Trapper:wrap(function()
+                    tuyaCommand(self.parent, _("Executing…"), self.device.idx .. " M " .. spin.value)
+                end)
+            end,
+        }
+        UIManager:show(sw)
+        return true
+    end
     Trapper:wrap(function()
         tuyaCommand(self.parent, _("Executing…"), self.device.idx .. " " .. self.idx)
     end)
@@ -185,9 +204,20 @@ function TuyaDevice:init()
         dimen = Geom:new{w = self.width, h = self.height - self.title_hight}
     }
 
-    --local manual =
-    --table.insert(self.shortcut_container, manual)
-    --table.insert(self.shortcut_container, HorizontalSpan:new{ width = self.sc_padding, })
+    local manual = ShortcutBox:new{
+            width = self.sc_width,
+            height = self.height - self.title_hight,
+            border = self.sc_border,
+            is_offline = self.is_offline,
+            font_face = self.fontface,
+            font_size = self.fontsize,
+            sc = {},
+            manual = true,
+            device = self.device,
+            parent = self,
+        }
+    table.insert(self.shortcut_container, manual)
+    table.insert(self.shortcut_container, HorizontalSpan:new{ width = self.sc_padding, })
 
     for num, v in ipairs(self.device.shortcuts) do
         local SB = ShortcutBox:new{
@@ -260,8 +290,8 @@ function TuyaView:init()
 
     self.inner_padding = Size.padding.small
 
-    -- 7 scs in a week
-    self.sc_width = math.floor((self.dimen.w - (8*self.inner_padding)) / 7)
+    -- 8 scs in a week
+    self.sc_width = math.floor((self.dimen.w - (9*self.inner_padding)) / 8)
 
     self.content_width = self.dimen.w
 

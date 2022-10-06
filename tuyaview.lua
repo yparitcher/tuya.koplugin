@@ -36,7 +36,7 @@ local function getSourceDir()
     end
 end
 
-local ShortcutBox = InputContainer:new{
+local ShortcutBox = InputContainer:extend{
     filler = false,
     width = nil,
     height = nil,
@@ -137,7 +137,7 @@ function ShortcutBox:onTap()
     return true
 end
 
-local TuyaDeviceTitle = InputContainer:new{
+local TuyaDeviceTitle = InputContainer:extend{
     parent = nil,
 }
 
@@ -183,7 +183,7 @@ function TuyaDeviceTitle:update()
     UIManager:setDirty(self.show_parent, "ui", self.dimen)
 end
 
-local TuyaDevice = InputContainer:new{
+local TuyaDevice = InputContainer:extend{
     device = nil,
     width = nil,
     height = nil,
@@ -193,11 +193,12 @@ local TuyaDevice = InputContainer:new{
     sc_border = 0,
     font_size = 0,
     font_face = "xx_smallinfofont",
-    state = {},
+    state = nil, -- table
     is_offline = false,
 }
 
 function TuyaDevice:init()
+    self.state = {}
     self.title = TuyaDeviceTitle:new{parent=self}
 
     self.shortcut_container = HorizontalGroup:new{
@@ -245,7 +246,7 @@ function TuyaDevice:init()
     self[1] = overlaps
 end
 
-local TuyaView = InputContainer:new{
+local TuyaView = InputContainer:extend{
     devices = nil,
     nb_book_spans = 3,
     font_face = "xx_smallinfofont",

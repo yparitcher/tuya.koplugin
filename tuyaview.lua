@@ -276,17 +276,11 @@ function TuyaView:init()
     }
 
     if Device:hasKeys() then
-        self.key_events = {
-            Close = { {"Back"}, doc = "close page" },
+        self.key_events.Close = { {"Back"}, },
         }
     end
     if Device:isTouchDevice() then
-        self.ges_events.Swipe = {
-            GestureRange:new{
-                ges = "swipe",
-                range = self.dimen,
-            }
-        }
+        self.ges_events.Swipe = { GestureRange:new{ ges = "swipe", range = self.dimen, } }
     end
 
     self.inner_padding = Size.padding.small

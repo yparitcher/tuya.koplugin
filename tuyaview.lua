@@ -276,8 +276,7 @@ function TuyaView:init()
     }
 
     if Device:hasKeys() then
-        self.key_events.Close = { {"Back"}, },
-        }
+        self.key_events.Close = { {"Back"}, }
     end
     if Device:isTouchDevice() then
         self.ges_events.Swipe = { GestureRange:new{ ges = "swipe", range = self.dimen, } }
